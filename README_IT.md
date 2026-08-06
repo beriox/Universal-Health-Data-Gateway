@@ -29,5 +29,11 @@ In un mondo in cui un pacco spedito dall'altra parte del pianeta viene tracciato
 pip install -r requirements.txt
 python demo_sim.py
 
+You can see the generated output there: https://github.com/beriox/Universal-Health-Data-Gateway/blob/main/demo_output.txt
+
+
 🤝 Chiamata alla Community
 Nota dell'Autore: Questo repository è un segnaposto concettuale e un blueprint architetturale. L'obiettivo è delegare e coordinare la community open source (sviluppatori, esperti FHIR, ONG e soccorritori) per costruire insieme connettori, regole di compliance e integrazioni.
+
+p.s. mio side-project:
+https://prospetto-sanitario.blogspot.com/

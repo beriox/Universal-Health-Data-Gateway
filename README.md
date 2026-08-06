@@ -16,6 +16,13 @@ In a world where a postal parcel is tracked in real-time across dozens of custom
 
 ---
 
+NEWS:
+
+The matrix now covers the entire globe and clearly states EU (GDPR/EHDS), American (HIPAA/PIPEDA), African (POPIA/Malabo), Asian (PDPA/APEC) and Oceanian laws!
+
+
+---
+
 ## 🗺️ Architectural Scenario: "Emergency & Cross-Border Anywhere"
 
 ```text
@@ -66,7 +73,7 @@ pip install -r requirements.txt
 # Run simulation
 python demo_sim.py
 
-You can see the output there: [https://github.com/beriox/Universal-Health-Data-Gateway/blob/main/demo_output.txt][https://github.com/beriox/Universal-Health-Data-Gateway/blob/main/demo_output.txt]
+You can see the generated output there: https://github.com/beriox/Universal-Health-Data-Gateway/blob/main/demo_output.txt
 
 🤝 Call for Maintainers & Contributors
 Note from the Author: This repository serves as a conceptual framework and architectural blueprint. I am looking for developers, digital health experts, NGOs, and emergency response teams to take over active maintenance, build source adaptors, and expand compliance rules.
