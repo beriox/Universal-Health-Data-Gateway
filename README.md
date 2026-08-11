@@ -1,5 +1,15 @@
-# 🌍 Universal Health Data Gateway (UHC)
-> **"A diplomatic, regulatory, and anti-anxiety 'Google Translate' for global health data."**
+# 🌐 Universal Health Data Gateway (UHDG)
+
+> **"Decentralized, Zero-Trust Health Data Portability for Emergency & Off-Grid Environments."**
+
+---
+
+### 🚀 LIVE INTERACTIVE SIMULATOR
+
+> **🌐 Try the Demo:** **[Emergency Health Data Routing Simulator](https://beriox.github.io/Universal-Health-Data-Gateway/)**  
+> *(Simulates real-time encrypted routing, jurisdictional compliance blocks, and potential integrations with open platforms like **OpenHospital** or travel onboarding software).*
+
+---
 
 [🇮🇹 Leggi la documentazione in Italiano](./README_IT.md)
 
@@ -12,7 +22,7 @@
 ### 💡 The Vision
 In a world where a postal parcel is tracked in real-time across dozens of customs offices and carriers, **a human being's life-saving medical data remains locked behind regional or bureaucratic silos**—right when emergencies, travel, rescue missions, or humanitarian relief occur.
 
-**UHC Gateway** is an open-source, neutral middleware acting as a **dynamic compliance orchestrator and personal consent manager**. It enables seamless, encrypted, and legally compliant medical data flows between heterogeneous sources and global destinations across any jurisdiction.
+**UHDG** is an open-source, neutral middleware acting as a **dynamic compliance orchestrator and personal consent manager**. It enables seamless, encrypted, and legally compliant medical data flows between heterogeneous sources and global destinations across any jurisdiction.
 
 ---
 
@@ -33,20 +43,20 @@ The matrix now covers the entire globe and clearly states EU (GDPR/EHDS), Americ
                                                    │
                                                    ▼
 ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                  UHC COMPLIANCE & ROUTING ENGINE                               │
-│  - Geo-Context Detection (GPS/Satellite)          - Dynamic Rule Checker (GDPR / HIPAA / EHDS)  │
+│                                 UHDG COMPLIANCE & ROUTING ENGINE                               │
+│  - Geo-Context Detection (GPS/Satellite)          - Dynamic Rule Checker (GDPR / HIPAA / EHDS) │
 │  - Trust Handshake (CSA STAR / OID / eIDAS)       - Immutable Zero-Logging & Auditing          │
 └───────┬──────────────────────────────────────────┬─────────────────────────────────────┬───────┘
         │                                          │                                     │
         ▼                                          ▼                                     ▼
-┌───────────────────────┐              ┌───────────────────────┐             ┌───────────────────────┐
-│     DATA SOURCES      │              │     STORAGE VAULT     │             │     DESTINATIONS      │
-├───────────────────────┤              ├───────────────────────┤             ├───────────────────────┤
-│ • Hospitals / FHIR    │              │ • Cloud National/EU   │             │ • Volunteer Doctor /  │
-│ • OpenMRS (NGOs)      │ ───────────► │   (e.g., Aruba/Gaia-X)│ ──────────► │   On-board Air Crew   │
-│ • Fitness Apps / IoT  │              │ • Local/Edge Storage  │             │ • Google Health /     │
-│ • PDF/OCR Import      │              │   (PC / USB / Off-Grid│             │   EU Health Space     │
-└───────────────────────┘              └───────────────────────┘             │ • Anti-Anxiety Update │
+┌───────────────────────┐              ┌─────────────────────────┐           ┌───────────────────────┐
+│     DATA SOURCES      │              │     STORAGE VAULT       │           │     DESTINATIONS      │
+├───────────────────────┤              ├─────────────────────────┤           ├───────────────────────┤
+│ • Hospitals / FHIR    │              │ • Global/EU/National    │           │ • Volunteer Doctor /  │
+│ • OpenMRS (NGOs)      │ ───────────► │   (Big5/Gaia-X/Aruba/...│ ────────► │   On-board Air Crew   │
+│ • Fitness Apps / IoT  │              │ • On-Prem/Regional/Local|           │ • Google Health /     │
+│ • PDF/OCR Import      │              │   (Hospital/USB Key/... |           │   EU Health Space     │
+└───────────────────────┘              └─────────────────────────┘           │ • Anti-Anxiety Update │
                                                                              │   for Family at Home  │
                                                                              └───────────────────────┘
 
