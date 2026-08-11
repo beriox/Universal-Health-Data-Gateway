@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Universal Health Data Gateway — Emergency Routing Simulator</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#05070d; --panel:#0b1220; --line:#1c2740;
+    --text:#e7eefc; --muted:#7c8aa8;
+    --cyan:#33e6d0; --red:#ff4d5e; --red-dim:#3a1420;
+    --green:#38e28f; --green-dim:#0f3324; --amber:#ffb545;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospace;overflow:hidden;}
+  #map{position:absolute;inset:0;z-index:0;}
+
+  #topbar{
+    position:absolute;top:0;left:0;right:0;z-index:1000;
+    display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    padding:14px 20px;
+    background:linear-gradient(180deg, rgba(5,7,13,0.95) 0%, rgba(5,7,13,0.78) 75%, transparent 100%);
+    pointer-events:none;
+  }
+  #topbar .brand{display:flex;flex-direction:column;gap:2px;pointer-events:auto;}
+  #topbar .brand .eyebrow{font-size:10px;letter-spacing:.18em;color:var(--cyan);text-transform:uppercase;font-weight:600;}
+  #topbar .brand h1{font-family:'Space Grotesk',sans-serif;font-size:19px;margin:0;font-weight:700;letter-spacing:.01em;}
+  #topbar .brand a{color:var(--muted);font-size:11px;text-decoration:none;border-bottom:1px dotted var(--line);}
+  #topbar .brand a:hover{color:var(--cyan);}
+  #topbar .right-controls{display:flex;align-items:center;gap:10px;pointer-events:auto;flex-wrap:wrap;justify-content:flex-end;}
+
+  .chip{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--text);}
+  #status-chip{color:var(--muted);}
+  #status-chip .dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);animation:pulse 1.6s ease-in-out infinite;flex-shrink:0;}
+
+  #country-select-wrap label{font-size:11px;color:var(--muted);white-space:nowrap;}
+  #citizen-country{
+    background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:6px;
+    font-family:'IBM Plex Mono',monospace;font-size:11px;padding:4px 6px;max-width:180px;
+  }
+
+  #atoll-toggle{cursor:pointer;user-select:none;transition:all .2s ease;}
+  #atoll-toggle:hover{border-color:var(--red);}
+  #atoll-toggle .switch{width:30px;height:16px;border-radius:999px;background:#22304a;position:relative;flex-shrink:0;transition:background .2s ease;}
+  #atoll-toggle .switch::after{content:'';position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:var(--muted);transition:all .2s ease;}
+  #atoll-toggle.active{border-color:var(--red);background:var(--red-dim);}
+  #atoll-toggle.active .switch{background:rgba(255,77,94,.35);}
+  #atoll-toggle.active .switch::after{left:16px;background:var(--red);box-shadow:0 0 8px var(--red);}
+
+  #instruction{
+    position:absolute;left:50%;top:96px;transform:translateX(-50%);
+    z-index:900;background:var(--panel);border:1px solid var(--line);
+    padding:9px 16px;border-radius:999px;font-size:12px;color:var(--muted);
+    box-shadow:0 8px 24px rgba(0,0,0,.4);pointer-events:none;
+    display:flex;align-items:center;gap:8px;max-width:92vw;text-align:center;
+  }
+  #instruction b{color:var(--text);font-weight:600;}
+  #instruction .pin{color:var(--red);}
+
+  #legend{
+    position:absolute;left:20px;bottom:24px;z-index:900;
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:14px 16px;font-size:11px;min-width:240px;max-width:280px;
+    box-shadow:0 10px 30px rgba(0,0,0,.45);
+  }
+  #legend h3{margin:0 0 10px 0;font-family:'Space Grotesk',sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:600;}
+  #legend .row{display:flex;align-items:center;gap:9px;margin-bottom:7px;}
+  #legend .row:last-child{margin-bottom:0;}
+  #legend .swatch{width:22px;height:3px;border-radius:2px;flex-shrink:0;}
+  #legend .row span.lbl{color:var(--text);}
+  #legend .sw-cyan{background:repeating-linear-gradient(90deg,var(--cyan) 0 6px, transparent 6px 10px);}
+  #legend .sw-red{background:repeating-linear-gradient(90deg,var(--red) 0 6px, transparent 6px 10px);}
+  #legend .sw-green{background:repeating-linear-gradient(90deg,var(--green) 0 6px, transparent 6px 10px);}
+  #legend .note{margin-top:10px;padding-top:10px;border-top:1px solid var(--line);color:var(--muted);font-size:10px;line-height:1.5;}
+
+  .lm-hospital{width:24px;height:24px;border-radius:7px;background:#ffffff;border:2px solid var(--red);display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;box-shadow:0 2px 8px rgba(0,0,0,.5);}
+  .lm-atoll{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;border:2px solid var(--red);background:var(--red-dim);color:var(--red);box-shadow:0 0 0 6px rgba(255,77,94,.12),0 0 12px rgba(255,77,94,.5);animation:pulse-ring 1.8s ease-in-out infinite;}
+  .lm-atoll.compliant{border-color:var(--green);background:var(--green-dim);color:var(--green);box-shadow:0 0 0 6px rgba(56,226,143,.12),0 0 12px rgba(56,226,143,.5);}
+  .lm-citizen{width:18px;height:18px;border-radius:50%;background:var(--red);box-shadow:0 0 0 0 rgba(255,77,94,.6);animation:citizen-pulse 1.4s ease-out infinite;display:flex;align-items:center;justify-content:center;font-size:10px;}
+  .lm-lock{font-size:14px;filter:drop-shadow(0 0 4px rgba(51,230,208,.9));}
+
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+  @keyframes pulse-ring{0%,100%{transform:scale(1);}50%{transform:scale(1.12);}}
+  @keyframes citizen-pulse{0%{box-shadow:0 0 0 0 rgba(255,77,94,.55);}70%{box-shadow:0 0 0 16px rgba(255,77,94,0);}100%{box-shadow:0 0 0 0 rgba(255,77,94,0);}}
+
+  .flow-line{animation:dashmove 0.9s linear infinite;}
+  @keyframes dashmove{to{stroke-dashoffset:-28;}}
+
+  .leaflet-popup-content-wrapper{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:10px;font-family:'IBM Plex Mono',monospace;}
+  .leaflet-popup-tip{background:var(--panel);}
+  .pop h4{margin:0 0 6px 0;font-family:'Space Grotesk',sans-serif;font-size:14px;color:var(--text);}
+  .pop .meta{font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.5;}
+  .pop .regs{display:flex;flex-wrap:wrap;gap:5px;}
+  .pop .tag{font-size:10px;background:rgba(255,181,69,.12);color:var(--amber);border:1px solid rgba(255,181,69,.35);border-radius:999px;padding:2px 8px;}
+  .pop .status-line{font-size:11px;line-height:1.6;color:#cfe3ff;background:rgba(51,230,208,.08);border:1px solid rgba(51,230,208,.25);border-radius:6px;padding:8px 9px;margin-top:6px;}
+  .pop .status-line b{color:var(--cyan);}
+  .authorize-btn{
+    width:100%;margin-top:8px;padding:8px 10px;border-radius:7px;border:1px solid var(--green);
+    background:rgba(56,226,143,.08);color:var(--green);font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;font-weight:600;cursor:pointer;transition:all .2s ease;
+  }
+  .authorize-btn:hover{background:rgba(56,226,143,.2);box-shadow:0 0 12px rgba(56,226,143,.3);}
+
+  #drawer{position:absolute;top:0;right:-420px;width:400px;height:100%;background:var(--panel);border-left:1px solid var(--line);z-index:1200;transition:right .35s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;box-shadow:-20px 0 50px rgba(0,0,0,.5);}
+  #drawer.open{right:0;}
+  #drawer-head{padding:20px 22px 16px;border-bottom:1px solid var(--line);position:relative;}
+  #drawer-head .tag-state{display:inline-flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:999px;font-weight:600;margin-bottom:10px;}
+  .tag-state.blocked{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,77,94,.4);}
+  .tag-state.compliant{background:var(--green-dim);color:var(--green);border:1px solid rgba(56,226,143,.4);}
+  #drawer-head h2{font-family:'Space Grotesk',sans-serif;font-size:18px;margin:0 0 6px 0;}
+  #drawer-head p{font-size:12px;color:var(--muted);margin:0;line-height:1.6;}
+  #drawer-body{padding:18px 22px;overflow-y:auto;flex:1;}
+  #drawer-body .block-info{background:var(--red-dim);border:1px solid rgba(255,77,94,.35);border-radius:8px;padding:12px 14px;font-size:11.5px;color:#ffd0d5;line-height:1.6;margin-bottom:16px;}
+  #drawer-body .block-info.hidden{display:none;}
+  #drawer .field{font-size:11px;color:var(--muted);margin-bottom:14px;line-height:1.6;}
+  #drawer .field b{color:var(--text);}
+  #patch-btn{width:100%;padding:12px 14px;border-radius:8px;border:1px solid var(--cyan);background:rgba(51,230,208,.08);color:var(--cyan);font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.03em;cursor:pointer;transition:all .2s ease;margin-bottom:16px;}
+  #patch-btn:hover:not(:disabled){background:rgba(51,230,208,.18);box-shadow:0 0 16px rgba(51,230,208,.25);}
+  #patch-btn:disabled{opacity:.45;cursor:not-allowed;}
+  #patch-btn.done{border-color:var(--green);color:var(--green);background:rgba(56,226,143,.08);}
+  #payload-wrap{display:none;}
+  #payload-wrap.show{display:block;animation:fadein .5s ease;}
+  @keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+  #payload-wrap h3{font-family:'Space Grotesk',sans-serif;font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--green);margin:0 0 8px 0;}
+  #payload{background:#04120c;border:1px solid rgba(56,226,143,.3);border-radius:8px;padding:12px;font-size:10.5px;line-height:1.6;color:#a9f7d6;white-space:pre-wrap;max-height:320px;overflow-y:auto;}
+  #drawer-close{position:absolute;top:16px;right:18px;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;line-height:1;}
+  #drawer-close:hover{color:var(--text);}
+
+  #drawer-body::-webkit-scrollbar, #payload::-webkit-scrollbar{width:6px;}
+  #drawer-body::-webkit-scrollbar-thumb, #payload::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px;}
+
+  @media (max-width:560px){
+    #drawer{width:100%;right:-100%;}
+    #legend{min-width:180px;max-width:220px;font-size:10px;left:10px;bottom:10px;}
+    #topbar{flex-direction:column;align-items:flex-start;gap:8px;}
+    #instruction{top:150px;font-size:11px;}
+  }
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div id="topbar">
+  <div class="brand">
+    <span class="eyebrow">Universal Health Data Gateway</span>
+    <h1>Emergency Data Routing Simulator</h1>
+    <a href="https://github.com/beriox/Universal-Health-Data-Gateway/" target="_blank" rel="noopener">github.com/beriox/Universal-Health-Data-Gateway ↗</a>
+  </div>
+  <div class="right-controls">
+    <div id="country-select-wrap" class="chip">
+      <label for="citizen-country">Citizen Country:</label>
+      <select id="citizen-country"></select>
+    </div>
+    <div id="atoll-toggle" class="chip"><span class="switch"></span> 🏝 Travel to Lost Atoll</div>
+    <div id="status-chip" class="chip"><span class="dot"></span> LIVE ROUTING DEMO — NO REAL PATIENT DATA</div>
+  </div>
+</div>
+
+<div id="instruction"><span class="pin">◉</span> Click anywhere on the map to simulate a <b>Citizen in Emergency</b> (direct encrypted routing)</div>
+
+<div id="legend">
+  <h3>Data Flow Legend</h3>
+  <div class="row"><span class="swatch sw-cyan"></span><span class="lbl">Encrypted transit (🔒 in flight)</span></div>
+  <div class="row"><span class="swatch sw-red"></span><span class="lbl">Blocked — compliance conflict</span></div>
+  <div class="row"><span class="swatch sw-green"></span><span class="lbl">Compliant / physician-authorized</span></div>
+  <div class="note">
+    Two simulations: leave <b>Travel to Lost Atoll</b> off for direct hospital routing, or switch it on to relocate the citizen to the Pacific relay node and trigger the compliance block. Per-hospital <b>Authorize</b> only appears once a Citizen Country is declared.<br><br>
+    Sea legs approximate historical submarine-cable corridors — illustrative only. The network currently lists one flagship hospital for ~75 countries; other selections fall back to the nearest network hospital.
+  </div>
+</div>
+
+<div id="drawer">
+  <button id="drawer-close" aria-label="Close">✕</button>
+  <div id="drawer-head">
+    <span id="drawer-tag" class="tag-state blocked">⛔ Compliance Block</span>
+    <h2>Lost Atoll Relay Node</h2>
+    <p>Nukunonu, Tokelau — Pacific Ocean submarine-cable relay point. Emergency payloads from a citizen on-site are staged here before onward transit to hospital endpoints.</p>
+  </div>
+  <div id="drawer-body">
+    <div id="block-info" class="block-info">
+      <b>⚠ Data Blocked by Local Law.</b><br>
+      The relay jurisdiction has no formalized comprehensive health-data protection framework. The Universal Health Data Gateway refuses to forward an unclassified payload across an ambiguous compliance boundary until a recognized emergency-care exemption is applied.
+    </div>
+    <div class="field"><b>Node ID:</b> ATL-PAC-01<br><b>Coordinates:</b> 9.2015° S, 171.8483° W<br><b>Registered framework:</b> none on file (jurisdictional gap)</div>
+    <button id="patch-btn">Adopt Standard Emergency Compliance Patch</button>
+    <div id="payload-wrap">
+      <h3>✓ FHIR R4 Payload — Decrypted</h3>
+      <div id="payload"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+/* ---------------------------------------------------------------
+   Universal Health Data Gateway — Emergency Routing Simulator
+   Single-file demo. No real patient data. Illustrative only.
+   Hospital list: one flagship facility for ~75 countries, hand-
+   curated for accuracy rather than fabricated at global scale.
+   Sea routes approximate real submarine-cable corridors and are
+   NOT authoritative maritime or telecom infrastructure data.
+------------------------------------------------------------------*/
+
+const HOSPITALS = [
+  // --- Originally profiled (6 continents) ---
+  {name:"Ospedale Niguarda", city:"Milan", country:"Italy", continent:"Europe", lat:45.5149, lng:9.1894, regs:["GDPR (EU)"]},
+  {name:"Charité — Universitätsmedizin", city:"Berlin", country:"Germany", continent:"Europe", lat:52.5252, lng:13.3767, regs:["GDPR (EU)"]},
+  {name:"AP-HP Hôpitaux de Paris", city:"Paris", country:"France", continent:"Europe", lat:48.8398, lng:2.3765, regs:["GDPR (EU)"]},
+  {name:"University of Tokyo Hospital", city:"Tokyo", country:"Japan", continent:"Asia", lat:35.7126, lng:139.7620, regs:["APPI (Japan)"]},
+  {name:"Singapore General Hospital", city:"Singapore", country:"Singapore", continent:"Asia", lat:1.2795, lng:103.8347, regs:["PDPA (Singapore)"]},
+  {name:"All India Institute of Medical Sciences", city:"New Delhi", country:"India", continent:"Asia", lat:28.5672, lng:77.2100, regs:["DPDP Act (India)"]},
+  {name:"NewYork-Presbyterian Hospital", city:"New York", country:"United States", continent:"North America", lat:40.8397, lng:-73.9424, regs:["HIPAA (USA)"]},
+  {name:"Toronto General Hospital", city:"Toronto", country:"Canada", continent:"North America", lat:43.6596, lng:-79.3896, regs:["PIPEDA (Canada)"]},
+  {name:"Hospital General de México", city:"Mexico City", country:"Mexico", continent:"North America", lat:19.4133, lng:-99.1467, regs:["LFPDPPP (Mexico)"]},
+  {name:"Hospital das Clínicas", city:"São Paulo", country:"Brazil", continent:"South America", lat:-23.5558, lng:-46.6706, regs:["LGPD (Brazil)"]},
+  {name:"Fundación Santa Fe de Bogotá", city:"Bogotá", country:"Colombia", continent:"South America", lat:4.6663, lng:-74.0508, regs:["Law 1581 (Colombia)"]},
+  {name:"Hospital Italiano de Buenos Aires", city:"Buenos Aires", country:"Argentina", continent:"South America", lat:-34.6083, lng:-58.4205, regs:["Law 25.326 (Argentina)"]},
+  {name:"Kenyatta National Hospital", city:"Nairobi", country:"Kenya", continent:"Africa", lat:-1.3007, lng:36.8073, regs:["Kenya DPA 2019"]},
+  {name:"Groote Schuur Hospital", city:"Cape Town", country:"South Africa", continent:"Africa", lat:-33.9403, lng:18.4642, regs:["POPIA (South Africa)"]},
+  {name:"Cairo University Hospitals", city:"Cairo", country:"Egypt", continent:"Africa", lat:30.0257, lng:31.2119, regs:["PDPL (Egypt)"]},
+  {name:"Royal Prince Alfred Hospital", city:"Sydney", country:"Australia", continent:"Oceania", lat:-33.8886, lng:151.1873, regs:["Privacy Act 1988 (Australia)"]},
+  {name:"Auckland City Hospital", city:"Auckland", country:"New Zealand", continent:"Oceania", lat:-36.8600, lng:174.7728, regs:["Privacy Act 2020 (NZ)"]},
+  {name:"CWM Hospital", city:"Suva", country:"Fiji", continent:"Oceania", lat:-18.1248, lng:178.4426, regs:["Online Safety Act (partial)"]},
+  // --- EU / EEA / UK / CH ---
+  {name:"AKH Wien (Vienna General Hospital)", city:"Vienna", country:"Austria", continent:"Europe", lat:48.2082, lng:16.3738, regs:["GDPR (EU)"]},
+  {name:"Cliniques universitaires Saint-Luc", city:"Brussels", country:"Belgium", continent:"Europe", lat:50.8503, lng:4.3517, regs:["GDPR (EU)"]},
+  {name:"Pirogov Emergency Hospital", city:"Sofia", country:"Bulgaria", continent:"Europe", lat:42.6977, lng:23.3219, regs:["GDPR (EU)"]},
+  {name:"University Hospital Centre Zagreb", city:"Zagreb", country:"Croatia", continent:"Europe", lat:45.8150, lng:15.9819, regs:["GDPR (EU)"]},
+  {name:"Nicosia General Hospital", city:"Nicosia", country:"Cyprus", continent:"Europe", lat:35.1856, lng:33.3823, regs:["GDPR (EU)"]},
+  {name:"General University Hospital in Prague", city:"Prague", country:"Czechia", continent:"Europe", lat:50.0755, lng:14.4378, regs:["GDPR (EU)"]},
+  {name:"Rigshospitalet", city:"Copenhagen", country:"Denmark", continent:"Europe", lat:55.6761, lng:12.5683, regs:["GDPR (EU)"]},
+  {name:"North Estonia Medical Centre", city:"Tallinn", country:"Estonia", continent:"Europe", lat:59.4370, lng:24.7536, regs:["GDPR (EU)"]},
+  {name:"Helsinki University Hospital", city:"Helsinki", country:"Finland", continent:"Europe", lat:60.1699, lng:24.9384, regs:["GDPR (EU)"]},
+  {name:"Evangelismos Hospital", city:"Athens", country:"Greece", continent:"Europe", lat:37.9838, lng:23.7275, regs:["GDPR (EU)"]},
+  {name:"Semmelweis University Clinic", city:"Budapest", country:"Hungary", continent:"Europe", lat:47.4979, lng:19.0402, regs:["GDPR (EU)"]},
+  {name:"St. James's Hospital", city:"Dublin", country:"Ireland", continent:"Europe", lat:53.3498, lng:-6.2603, regs:["GDPR (EU)"]},
+  {name:"Pauls Stradiņš Clinical University Hospital", city:"Riga", country:"Latvia", continent:"Europe", lat:56.9496, lng:24.1052, regs:["GDPR (EU)"]},
+  {name:"Vilnius University Hospital Santaros Klinikos", city:"Vilnius", country:"Lithuania", continent:"Europe", lat:54.6872, lng:25.2797, regs:["GDPR (EU)"]},
+  {name:"Centre Hospitalier de Luxembourg", city:"Luxembourg City", country:"Luxembourg", continent:"Europe", lat:49.6116, lng:6.1319, regs:["GDPR (EU)"]},
+  {name:"Mater Dei Hospital", city:"Msida", country:"Malta", continent:"Europe", lat:35.8989, lng:14.5146, regs:["GDPR (EU)"]},
+  {name:"Amsterdam UMC", city:"Amsterdam", country:"Netherlands", continent:"Europe", lat:52.3676, lng:4.9041, regs:["GDPR (EU)"]},
+  {name:"Medical University of Warsaw Hospital", city:"Warsaw", country:"Poland", continent:"Europe", lat:52.2297, lng:21.0122, regs:["GDPR (EU)"]},
+  {name:"Hospital de Santa Maria", city:"Lisbon", country:"Portugal", continent:"Europe", lat:38.7223, lng:-9.1393, regs:["GDPR (EU)"]},
+  {name:"Bucharest University Emergency Hospital", city:"Bucharest", country:"Romania", continent:"Europe", lat:44.4268, lng:26.1025, regs:["GDPR (EU)"]},
+  {name:"University Hospital Bratislava", city:"Bratislava", country:"Slovakia", continent:"Europe", lat:48.1486, lng:17.1077, regs:["GDPR (EU)"]},
+  {name:"University Medical Centre Ljubljana", city:"Ljubljana", country:"Slovenia", continent:"Europe", lat:46.0569, lng:14.5058, regs:["GDPR (EU)"]},
+  {name:"Hospital La Paz", city:"Madrid", country:"Spain", continent:"Europe", lat:40.4168, lng:-3.7038, regs:["GDPR (EU)"]},
+  {name:"Karolinska University Hospital", city:"Stockholm", country:"Sweden", continent:"Europe", lat:59.3293, lng:18.0686, regs:["GDPR (EU)"]},
+  {name:"Oslo University Hospital", city:"Oslo", country:"Norway", continent:"Europe", lat:59.9139, lng:10.7522, regs:["GDPR (EEA)"]},
+  {name:"Landspítali", city:"Reykjavik", country:"Iceland", continent:"Europe", lat:64.1466, lng:-21.9426, regs:["GDPR (EEA)"]},
+  {name:"University Hospital Zurich", city:"Zurich", country:"Switzerland", continent:"Europe", lat:47.3769, lng:8.5417, regs:["Swiss FADP"]},
+  {name:"Guy's and St Thomas' Hospital", city:"London", country:"United Kingdom", continent:"Europe", lat:51.5074, lng:-0.1278, regs:["UK GDPR / DPA 2018"]},
+  // --- Asia (additional) ---
+  {name:"Peking Union Medical College Hospital", city:"Beijing", country:"China", continent:"Asia", lat:39.9042, lng:116.4074, regs:["PIPL (China)"]},
+  {name:"Seoul National University Hospital", city:"Seoul", country:"South Korea", continent:"Asia", lat:37.5665, lng:126.9780, regs:["PIPA (South Korea)"]},
+  {name:"Cipto Mangunkusumo Hospital", city:"Jakarta", country:"Indonesia", continent:"Asia", lat:-6.2088, lng:106.8456, regs:["PDP Law (Indonesia)"]},
+  {name:"Philippine General Hospital", city:"Manila", country:"Philippines", continent:"Asia", lat:14.5995, lng:120.9842, regs:["Data Privacy Act (Philippines)"]},
+  {name:"Siriraj Hospital", city:"Bangkok", country:"Thailand", continent:"Asia", lat:13.7563, lng:100.5018, regs:["PDPA (Thailand)"]},
+  {name:"Bach Mai Hospital", city:"Hanoi", country:"Vietnam", continent:"Asia", lat:21.0278, lng:105.8342, regs:["Decree 13/2023 (Vietnam)"]},
+  {name:"King Faisal Specialist Hospital", city:"Riyadh", country:"Saudi Arabia", continent:"Asia", lat:24.7136, lng:46.6753, regs:["PDPL (Saudi Arabia)"]},
+  {name:"Sheikh Khalifa Medical City", city:"Abu Dhabi", country:"United Arab Emirates", continent:"Asia", lat:24.4539, lng:54.3773, regs:["PDPL (UAE)"]},
+  {name:"Hadassah Medical Center", city:"Jerusalem", country:"Israel", continent:"Asia", lat:31.7683, lng:35.2137, regs:["Privacy Protection Law (Israel)"]},
+  {name:"Hacettepe University Hospital", city:"Ankara", country:"Turkey", continent:"Asia", lat:39.9334, lng:32.8597, regs:["KVKK (Turkey)"]},
+  {name:"Aga Khan University Hospital", city:"Karachi", country:"Pakistan", continent:"Asia", lat:24.8607, lng:67.0011, regs:["no comprehensive law on file"]},
+  {name:"Dhaka Medical College Hospital", city:"Dhaka", country:"Bangladesh", continent:"Asia", lat:23.8103, lng:90.4125, regs:["Data Protection Act (draft, Bangladesh)"]},
+  {name:"National Hospital of Sri Lanka", city:"Colombo", country:"Sri Lanka", continent:"Asia", lat:6.9271, lng:79.8612, regs:["PDPA (Sri Lanka)"]},
+  // --- Americas (additional) ---
+  {name:"Hermanos Ameijeiras Hospital", city:"Havana", country:"Cuba", continent:"North America", lat:23.1136, lng:-82.3666, regs:["no comprehensive law on file"]},
+  {name:"Hospital México", city:"San José", country:"Costa Rica", continent:"North America", lat:9.9281, lng:-84.0907, regs:["Data Protection Law (Costa Rica)"]},
+  {name:"Complejo Hospitalario Dr. Arnulfo Arias", city:"Panama City", country:"Panama", continent:"North America", lat:8.9824, lng:-79.5199, regs:["Law 81 (Panama)"]},
+  {name:"Hospital Clínico Universidad de Chile", city:"Santiago", country:"Chile", continent:"South America", lat:-33.4489, lng:-70.6693, regs:["Law 19628/21719 (Chile)"]},
+  {name:"Hospital Nacional Edgardo Rebagliati", city:"Lima", country:"Peru", continent:"South America", lat:-12.0464, lng:-77.0428, regs:["Data Protection Law (Peru)"]},
+  {name:"Hospital de Clínicas", city:"Montevideo", country:"Uruguay", continent:"South America", lat:-34.9011, lng:-56.1645, regs:["Law 18.331 (Uruguay)"]},
+  {name:"Hospital Eugenio Espejo", city:"Quito", country:"Ecuador", continent:"South America", lat:-0.1807, lng:-78.4678, regs:["Organic Data Protection Law (Ecuador)"]},
+  // --- Africa (additional) ---
+  {name:"Lagos University Teaching Hospital", city:"Lagos", country:"Nigeria", continent:"Africa", lat:6.5244, lng:3.3792, regs:["NDPA 2023 (Nigeria)"]},
+  {name:"Ibn Sina Hospital", city:"Rabat", country:"Morocco", continent:"Africa", lat:34.0209, lng:-6.8416, regs:["Law 09-08 (Morocco)"]},
+  {name:"Mustapha Pacha Hospital", city:"Algiers", country:"Algeria", continent:"Africa", lat:36.7538, lng:3.0588, regs:["Law 18-07 (Algeria)"]},
+  {name:"Korle Bu Teaching Hospital", city:"Accra", country:"Ghana", continent:"Africa", lat:5.6037, lng:-0.1870, regs:["DPA 2012 (Ghana)"]},
+  {name:"Tikur Anbessa Hospital", city:"Addis Ababa", country:"Ethiopia", continent:"Africa", lat:9.0300, lng:38.7400, regs:["draft law on file (Ethiopia)"]},
+  {name:"Charles Nicolle Hospital", city:"Tunis", country:"Tunisia", continent:"Africa", lat:36.8065, lng:10.1815, regs:["Organic Law 2004 (Tunisia)"]},
+  {name:"King Faisal Hospital", city:"Kigali", country:"Rwanda", continent:"Africa", lat:-1.9441, lng:30.0619, regs:["Law No 058/2021 (Rwanda)"]},
+  {name:"Mulago National Referral Hospital", city:"Kampala", country:"Uganda", continent:"Africa", lat:0.3476, lng:32.5825, regs:["DPPA 2019 (Uganda)"]},
+  // --- Oceania (additional) ---
+  {name:"Port Moresby General Hospital", city:"Port Moresby", country:"Papua New Guinea", continent:"Oceania", lat:-9.4438, lng:147.1803, regs:["no comprehensive law on file"]},
+];
+HOSPITALS.forEach((h,i) => h.id = i);
+const COVERED_COUNTRIES = new Set(HOSPITALS.map(h => h.country));
+
+const COUNTRIES = ["Afghanistan","Albania","Algeria","Andorra","Angola","Antigua and Barbuda","Argentina","Armenia","Australia","Austria","Azerbaijan","Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bhutan","Bolivia","Bosnia and Herzegovina","Botswana","Brazil","Brunei","Bulgaria","Burkina Faso","Burundi","Cabo Verde","Cambodia","Cameroon","Canada","Central African Republic","Chad","Chile","China","Colombia","Comoros","Congo (Republic of)","Congo (DR)","Costa Rica","Croatia","Cuba","Cyprus","Czechia","Denmark","Djibouti","Dominica","Dominican Republic","Ecuador","Egypt","El Salvador","Equatorial Guinea","Eritrea","Estonia","Eswatini","Ethiopia","Fiji","Finland","France","Gabon","Gambia","Georgia","Germany","Ghana","Greece","Grenada","Guatemala","Guinea","Guinea-Bissau","Guyana","Haiti","Honduras","Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Israel","Italy","Jamaica","Japan","Jordan","Kazakhstan","Kenya","Kiribati","Kosovo","Kuwait","Kyrgyzstan","Laos","Latvia","Lebanon","Lesotho","Liberia","Libya","Liechtenstein","Lithuania","Luxembourg","Madagascar","Malawi","Malaysia","Maldives","Mali","Malta","Marshall Islands","Mauritania","Mauritius","Mexico","Micronesia","Moldova","Monaco","Mongolia","Montenegro","Morocco","Mozambique","Myanmar","Namibia","Nauru","Nepal","Netherlands","New Zealand","Nicaragua","Niger","Nigeria","North Korea","North Macedonia","Norway","Oman","Pakistan","Palau","Palestine","Panama","Papua New Guinea","Paraguay","Peru","Philippines","Poland","Portugal","Qatar","Romania","Russia","Rwanda","Saint Kitts and Nevis","Saint Lucia","Saint Vincent and the Grenadines","Samoa","San Marino","Sao Tome and Principe","Saudi Arabia","Senegal","Serbia","Seychelles","Sierra Leone","Singapore","Slovakia","Slovenia","Solomon Islands","Somalia","South Africa","South Korea","South Sudan","Spain","Sri Lanka","Sudan","Suriname","Sweden","Switzerland","Syria","Taiwan","Tajikistan","Tanzania","Thailand","Timor-Leste","Togo","Tonga","Trinidad and Tobago","Tunisia","Turkey","Turkmenistan","Tuvalu","Uganda","Ukraine","United Arab Emirates","United Kingdom","United States","Uruguay","Uzbekistan","Vanuatu","Vatican City","Venezuela","Vietnam","Yemen","Zambia","Zimbabwe"];
+
+const ATOLL = {lat:-9.2015, lng:-171.8483};
+
+// ---------------------------------------------------------------
+// Backbone graph — approximates real-world submarine cable
+// corridors. Simplified for illustration only.
+// ---------------------------------------------------------------
+const NODES = {
+  SINES:{lat:37.95, lng:-8.87}, MAR:{lat:43.30, lng:5.37}, SUEZ:{lat:29.97, lng:32.55},
+  MUM:{lat:19.08, lng:72.88}, SIN:{lat:1.35, lng:103.82}, TOK:{lat:35.60, lng:140.10},
+  GUM:{lat:13.44, lng:144.79}, HAW:{lat:21.31, lng:-157.86}, USW:{lat:35.28, lng:-120.66},
+  USE:{lat:40.80, lng:-73.20}, FOR:{lat:-3.73, lng:-38.53}, MTZ:{lat:-28.95, lng:31.75},
+  LAG:{lat:6.45, lng:3.40}, PER:{lat:-31.95, lng:115.86}, SYD:{lat:-33.85, lng:151.20},
+  FIJ:{lat:-18.14, lng:178.44}, PAN:{lat:9.36, lng:-79.90}, ATOLL:{lat:ATOLL.lat, lng:ATOLL.lng},
+};
+const EDGES = [
+  ['SINES','MAR'], ['SINES','FOR'], ['SINES','USE'], ['SINES','LAG'],
+  ['MAR','SUEZ'], ['SUEZ','MUM'], ['MUM','SIN'], ['MUM','MTZ'],
+  ['SIN','TOK'], ['SIN','PER'], ['PER','SYD'],
+  ['TOK','GUM'], ['TOK','HAW'], ['GUM','SYD'],
+  ['HAW','USW'], ['HAW','FIJ'], ['HAW','ATOLL'],
+  ['FIJ','SYD'], ['FIJ','ATOLL'],
+  ['MTZ','LAG'], ['FOR','MTZ'], ['FOR','PAN'],
+  ['PAN','USW'], ['PAN','USE'], ['USE','USW'],
+];
+
+function haversine(lat1, lng1, lat2, lng2){
+  const R = 6371, toRad = d => d*Math.PI/180;
+  const dLat = toRad(lat2-lat1), dLng = toRad(lng2-lng1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(a));
+}
+
+const ADJ = {};
+Object.keys(NODES).forEach(k => ADJ[k] = []);
+EDGES.forEach(([a,b]) => {
+  const d = haversine(NODES[a].lat, NODES[a].lng, NODES[b].lat, NODES[b].lng);
+  ADJ[a].push({to:b, d}); ADJ[b].push({to:a, d});
+});
+
+function nearestNode(lat, lng){
+  let best = null, bd = Infinity;
+  Object.keys(NODES).forEach(k => {
+    const d = haversine(lat, lng, NODES[k].lat, NODES[k].lng);
+    if(d < bd){ bd = d; best = k; }
+  });
+  return best;
+}
+
+function dijkstra(startId, endId){
+  const dist = {}, prev = {}, visited = new Set();
+  Object.keys(NODES).forEach(k => dist[k] = Infinity);
+  dist[startId] = 0;
+  const pq = [[0, startId]];
+  while(pq.length){
+    pq.sort((a,b) => a[0]-b[0]);
+    const [d, u] = pq.shift();
+    if(visited.has(u)) continue;
+    visited.add(u);
+    if(u === endId) break;
+    ADJ[u].forEach(({to, d:w}) => {
+      const nd = d + w;
+      if(nd < dist[to]){ dist[to] = nd; prev[to] = u; pq.push([nd, to]); }
+    });
+  }
+  if(!visited.has(endId) && startId !== endId) return [startId, endId];
+  const path = [endId];
+  let cur = endId;
+  while(cur !== startId){
+    cur = prev[cur];
+    if(!cur) return [startId, endId];
+    path.unshift(cur);
+  }
+  return path;
+}
+
+function buildSeaPathFrom(sourceNodeId, toLatLng){
+  const endNode = nearestNode(toLatLng.lat, toLatLng.lng);
+  const ids = dijkstra(sourceNodeId, endNode);
+  const coords = ids.map(id => [NODES[id].lat, NODES[id].lng]);
+  return [...coords, [toLatLng.lat, toLatLng.lng]];
+}
+function buildSeaPathDirect(fromLatLng, toLatLng){
+  const startNode = nearestNode(fromLatLng.lat, fromLatLng.lng);
+  const endNode = nearestNode(toLatLng.lat, toLatLng.lng);
+  const ids = dijkstra(startNode, endNode);
+  const coords = ids.map(id => [NODES[id].lat, NODES[id].lng]);
+  return [[fromLatLng.lat, fromLatLng.lng], ...coords, [toLatLng.lat, toLatLng.lng]];
+}
+
+function cumulativeLengths(points){
+  const lens = [0];
+  for(let i=1;i<points.length;i++) lens.push(lens[i-1] + haversine(points[i-1][0], points[i-1][1], points[i][0], points[i][1]));
+  return lens;
+}
+function pointAtFraction(points, lens, frac){
+  const total = lens[lens.length-1] || 1;
+  const target = total * frac;
+  let i = 0;
+  while(i < lens.length-2 && lens[i+1] < target) i++;
+  const segLen = (lens[i+1]-lens[i]) || 1;
+  const t = (target - lens[i]) / segLen;
+  return [points[i][0] + (points[i+1][0]-points[i][0])*t, points[i][1] + (points[i+1][1]-points[i][1])*t];
+}
+
+// ---------------------------------------------------------------
+// Map init — standard OpenStreetMap raster tiles
+// ---------------------------------------------------------------
+const map = L.map('map', {worldCopyJump:true, minZoom:2}).setView([15, 10], 3);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  subdomains: 'abc', maxZoom: 19
+}).addTo(map);
+
+function divIcon(html, size, className){
+  return L.divIcon({html, className: className||'', iconSize:size, iconAnchor:[size[0]/2, size[1]/2]});
+}
+
+// ---------------------------------------------------------------
+// State
+// ---------------------------------------------------------------
+let citizenMarker = null;
+let hospitalLines = {};        // hospital.id -> polyline
+let authorizedHospitals = new Set();
+let lockMarker = null, lockAnim = null;
+let nearestHospitals = [];
+let atollTravelMode = false;
+let atollCompliant = false;
+let selectedCountry = 'Unknown';
+const hospitalMarkers = {};
+
+// ---------------------------------------------------------------
+// Hospital markers (permanent)
+// ---------------------------------------------------------------
+function buildHospitalPopup(h){
+  const tags = h.regs.map(r => `<span class="tag">${r}</span>`).join('');
+  let authSection = '';
+  const targeted = !!hospitalLines[h.id];
+  if(targeted && authorizedHospitals.has(h.id)){
+    authSection = `<div class="status-line" style="border-color:rgba(56,226,143,.35);background:rgba(56,226,143,.08);color:#b9f7d6;">✔ Authorized by attending physician — critical blood-data transiting under Emergency Consent Protocol.</div>`;
+  } else if(targeted && atollTravelMode && citizenMarker && selectedCountry !== 'Unknown'){
+    authSection = `<button class="authorize-btn" onclick="authorizeHospital(${h.id})">Authorize Emergency Transfer</button>`;
+  } else if(targeted && atollTravelMode){
+    authSection = `<div class="meta" style="margin-top:6px;">Declare a <b>Citizen Country</b> above to enable physician authorization on this route.</div>`;
+  }
+  return `
+    <div class="pop">
+      <h4>${h.name}</h4>
+      <div class="meta">${h.city}, ${h.country} · ${h.continent}<br>GPS: ${h.lat.toFixed(4)}, ${h.lng.toFixed(4)}</div>
+      <div class="regs">${tags}</div>
+      ${authSection}
+    </div>
+  `;
+}
+
+HOSPITALS.forEach(h => {
+  const icon = divIcon('<div class="lm-hospital">🏥</div>', [24,24]);
+  const marker = L.marker([h.lat, h.lng], {icon}).addTo(map);
+  marker.bindPopup(buildHospitalPopup(h));
+  marker.on('popupopen', () => marker.setPopupContent(buildHospitalPopup(h)));
+  hospitalMarkers[h.id] = marker;
+});
+
+window.authorizeHospital = function(id){
+  if(!hospitalLines[id]) return;
+  authorizedHospitals.add(id);
+  hospitalLines[id].setStyle({color:'#38e28f'});
+  const h = HOSPITALS.find(x => x.id === id);
+  const m = hospitalMarkers[id];
+  if(h && m) m.setPopupContent(buildHospitalPopup(h));
+};
+
+// ---------------------------------------------------------------
+// Atoll node
+// ---------------------------------------------------------------
+const atollMarker = L.marker([ATOLL.lat, ATOLL.lng], {
+  icon: divIcon('<div class="lm-atoll">⛔</div>', [26,26]), zIndexOffset: 1000
+}).addTo(map);
+atollMarker.on('click', () => openDrawer());
+
+function refreshAtollIcon(){
+  atollMarker.setIcon(divIcon(`<div class="lm-atoll ${atollCompliant?'compliant':''}">${atollCompliant?'✔':'⛔'}</div>`, [26,26]));
+}
+refreshAtollIcon();
+
+// ---------------------------------------------------------------
+// Country dropdown
+// ---------------------------------------------------------------
+const countrySelect = document.getElementById('citizen-country');
+(function populateCountries(){
+  const optUnknown = document.createElement('option');
+  optUnknown.value = 'Unknown'; optUnknown.textContent = 'Unknown (auto-detect)';
+  countrySelect.appendChild(optUnknown);
+  COUNTRIES.slice().sort().forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = COVERED_COUNTRIES.has(c) ? c : `${c} (no network hospital)`;
+    countrySelect.appendChild(opt);
+  });
+})();
+countrySelect.addEventListener('change', function(){
+  selectedCountry = this.value;
+  if(citizenMarker) placeCitizen(citizenMarker.getLatLng());
+});
+
+// ---------------------------------------------------------------
+// Citizen placement + routing
+// ---------------------------------------------------------------
+function clearRoutes(){
+  Object.values(hospitalLines).forEach(l => map.removeLayer(l));
+  hospitalLines = {};
+  authorizedHospitals = new Set();
+  if(lockMarker){ map.removeLayer(lockMarker); lockMarker = null; }
+  if(lockAnim){ cancelAnimationFrame(lockAnim); lockAnim = null; }
+}
+
+function computeTargetHospitals(latlng){
+  if(selectedCountry !== 'Unknown'){
+    const inCountry = HOSPITALS.filter(h => h.country === selectedCountry);
+    if(inCountry.length) return inCountry.map(h => ({...h, dist: haversine(latlng.lat, latlng.lng, h.lat, h.lng)}));
+  }
+  return HOSPITALS.map(h => ({...h, dist: haversine(latlng.lat, latlng.lng, h.lat, h.lng)})).sort((a,b) => a.dist-b.dist).slice(0,2);
+}
+
+map.on('click', (e) => {
+  if(atollTravelMode) return; // position is fixed at the Lost Atoll in this mode
+  document.getElementById('instruction').style.display = 'none';
+  placeCitizen(e.latlng);
+});
+
+const instrEl = document.getElementById('instruction');
+document.getElementById('atoll-toggle').addEventListener('click', function(){
+  atollTravelMode = !atollTravelMode;
+  this.classList.toggle('active', atollTravelMode);
+  if(citizenMarker){ map.removeLayer(citizenMarker); citizenMarker = null; }
+  clearRoutes();
+  atollCompliant = false;
+  refreshAtollIcon();
+  resetDrawerState();
+  if(atollTravelMode){
+    instrEl.style.display = 'none';
+    placeCitizen(L.latLng(ATOLL.lat, ATOLL.lng));
+  } else {
+    instrEl.innerHTML = '<span class="pin">◉</span> Click anywhere on the map to simulate a <b>Citizen in Emergency</b> (direct encrypted routing)';
+    instrEl.style.display = 'flex';
+  }
+});
+
+function placeCitizen(latlng){
+  if(citizenMarker) map.removeLayer(citizenMarker);
+  clearRoutes();
+  atollCompliant = false;
+  refreshAtollIcon();
+  resetDrawerState();
+
+  citizenMarker = L.marker(latlng, {
+    icon: divIcon('<div class="lm-citizen">🚨</div>', [18,18]), zIndexOffset: 900
+  }).addTo(map);
+
+  nearestHospitals = computeTargetHospitals(latlng);
+  drawRoutes(latlng);
+
+  const firstSource = nearestHospitals[0] ? nearestHospitals[0].name : "nearest network hospital";
+  const noMatch = selectedCountry !== 'Unknown' && !COVERED_COUNTRIES.has(selectedCountry);
+
+  if(selectedCountry === 'Unknown'){
+    citizenMarker.bindPopup(buildCitizenStatus(firstSource, "detecting origin via OpenStreetMap…", false, false)).openPopup();
+    reverseGeocodeCountry(latlng.lat, latlng.lng).then(country => {
+      citizenMarker.setPopupContent(buildCitizenStatus(firstSource, country, false, false));
+    });
+  } else {
+    citizenMarker.bindPopup(buildCitizenStatus(firstSource, selectedCountry, true, noMatch)).openPopup();
+  }
+}
+
+function buildCitizenStatus(firstSource, country, declared, noMatch){
+  const originLine = declared
+    ? `Declared origin: <b>${country}</b> (citizen-provided at boarding).`
+    : `Original detected country: <b>${country}</b>.`;
+  const fallbackLine = noMatch ? `<br><span style="color:var(--amber);">No Gateway-registered hospital on file in ${country} — falling back to nearest network hospitals.</span>` : '';
+  const modeLine = atollTravelMode
+    ? `<br>Route staged via <b>Lost Atoll Relay (ATL-PAC-01)</b> — compliance review required.`
+    : `<br>Route: direct encrypted transit — no jurisdictional relay in path.`;
+  const ll = citizenMarker.getLatLng();
+  return `
+    <div class="pop">
+      <h4>Citizen in Emergency</h4>
+      <div class="meta">GPS: ${ll.lat.toFixed(4)}, ${ll.lng.toFixed(4)}</div>
+      <div class="status-line">
+        Citizen approved emergency health-data transfer during flight onboarding.<br>
+        Requesting citizen data from world hospitals — trying first source: <b>${firstSource}</b>.<br>
+        ${originLine}${fallbackLine}${modeLine}
+      </div>
+    </div>
+  `;
+}
+
+async function reverseGeocodeCountry(lat, lng){
+  try{
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=3&addressdetails=1`, {headers:{'Accept':'application/json'}});
+    if(!res.ok) throw new Error('lookup failed');
+    const data = await res.json();
+    if(data && data.address && data.address.country) return data.address.country;
+    return 'international waters (no jurisdiction on file)';
+  }catch(e){
+    return 'unresolved (offline lookup)';
+  }
+}
+
+function drawRoutes(citizenLatLng){
+  if(atollTravelMode){
+    // Citizen is already co-located with the Lost Atoll — only the
+    // outbound legs to hospitals exist, and they start blocked.
+    nearestHospitals.forEach(h => {
+      const path = buildSeaPathFrom('ATOLL', L.latLng(h.lat, h.lng));
+      const line = L.polyline(path, {color:'#ff4d5e', weight:3, dashArray:'8 6', className:'flow-line blocked-seg'}).addTo(map);
+      hospitalLines[h.id] = line;
+    });
+  } else {
+    // Direct simulation — no relay, no bureaucratic block, encrypted transit only.
+    nearestHospitals.forEach(h => {
+      const path = buildSeaPathDirect(citizenLatLng, L.latLng(h.lat, h.lng));
+      const line = L.polyline(path, {color:'#33e6d0', weight:3, dashArray:'8 6', className:'flow-line'}).addTo(map);
+      hospitalLines[h.id] = line;
+    });
+    if(nearestHospitals[0]){
+      const path = buildSeaPathDirect(citizenLatLng, L.latLng(nearestHospitals[0].lat, nearestHospitals[0].lng));
+      animateLock(path);
+    }
+  }
+}
+
+function animateLock(path){
+  const lens = cumulativeLengths(path);
+  lockMarker = L.marker(pointAtFraction(path, lens, 0), {
+    icon: divIcon('<div class="lm-lock">🔒</div>', [16,16]), zIndexOffset: 1100
+  }).addTo(map);
+  let t = 0;
+  function step(){
+    t += 0.003; if(t > 1) t = 0;
+    lockMarker.setLatLng(pointAtFraction(path, lens, t));
+    lockAnim = requestAnimationFrame(step);
+  }
+  step();
+}
+
+// ---------------------------------------------------------------
+// Drawer logic
+// ---------------------------------------------------------------
+const drawer = document.getElementById('drawer');
+const drawerTag = document.getElementById('drawer-tag');
+const blockInfo = document.getElementById('block-info');
+const patchBtn = document.getElementById('patch-btn');
+const payloadWrap = document.getElementById('payload-wrap');
+const payloadEl = document.getElementById('payload');
+
+function openDrawer(){
+  drawer.classList.add('open');
+  if(!atollTravelMode || !citizenMarker){
+    patchBtn.disabled = true;
+    patchBtn.textContent = atollTravelMode ? 'Place a Citizen in Emergency first' : 'Switch on "Travel to Lost Atoll" to engage this node';
+  } else if(atollCompliant){
+    patchBtn.disabled = true;
+    patchBtn.textContent = '✔ Patch Applied — Route Compliant';
+  } else {
+    patchBtn.disabled = false;
+    patchBtn.textContent = 'Adopt Standard Emergency Compliance Patch';
+  }
+}
+document.getElementById('drawer-close').addEventListener('click', () => drawer.classList.remove('open'));
+
+function resetDrawerState(){
+  drawerTag.className = 'tag-state blocked';
+  drawerTag.textContent = '⛔ Compliance Block';
+  blockInfo.classList.remove('hidden');
+  payloadWrap.classList.remove('show');
+  patchBtn.classList.remove('done');
+  patchBtn.disabled = false;
+  patchBtn.textContent = 'Adopt Standard Emergency Compliance Patch';
+}
+
+patchBtn.addEventListener('click', () => {
+  if(!atollTravelMode || !citizenMarker || atollCompliant) return;
+  atollCompliant = true;
+  refreshAtollIcon();
+
+  Object.entries(hospitalLines).forEach(([id, line]) => {
+    line.setStyle({color:'#38e28f'});
+    authorizedHospitals.add(Number(id));
+  });
+
+  drawerTag.className = 'tag-state compliant';
+  drawerTag.textContent = '✔ Compliance Patch Active';
+  blockInfo.classList.add('hidden');
+  patchBtn.classList.add('done');
+  patchBtn.disabled = true;
+  patchBtn.textContent = '✔ Patch Applied — Route Compliant';
+
+  const target = nearestHospitals[0];
+  payloadEl.innerHTML = buildFhirPayload(target);
+  payloadWrap.classList.add('show');
+});
+
+function esc(s){ return String(s).replace(/</g,'&lt;'); }
+
+function buildFhirPayload(hospital){
+  const json = {
+    resourceType: "Bundle",
+    type: "collection",
+    entry: [
+      { resource: {
+          resourceType: "Patient", id: "citizen-emergency-demo",
+          identifier: [{ system: "urn:uhdg:emergency-token", value: "TMP-" + Math.floor(Math.random()*90000+10000) }],
+          gender: "unknown", _comment: "Demo record — no real patient data"
+        }},
+      { resource: {
+          resourceType: "Condition", code: { text: "Suspected acute cardiac event" },
+          severity: { text: "critical" }, recordedDate: new Date().toISOString().slice(0,10)
+        }},
+      { resource: {
+          resourceType: "Encounter", status: "in-progress",
+          class: { code: "EMER", display: "emergency" },
+          serviceProvider: { display: hospital ? hospital.name : "Unassigned" }
+        }}
+    ]
+  };
+  return esc(JSON.stringify(json, null, 2));
+}
+</script>
+</body>
+</html>
