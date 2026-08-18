@@ -1,4 +1,31 @@
-# Health Data Sample
+<p align="center">
+   <img src="CAPPY.png" alt="CAPPY, the capybara healthcare routing mascot" width="180" />
+</p>
+
+# 🦫 CAPPY: Capybara Adaptive Payload Processing Engine
+
+> *"The calmest, most interoperable data routing agent in the healthcare ecosystem."*
+
+## Who is CAPPY?
+
+In nature, the capybara is famous for its calm demeanor and its ability to get along with many
+species.
+
+In this repository, **CAPPY** is the lightweight execution engine and simulation CLI that
+demonstrates the **Universal Health Data Gateway (UHDG)** architecture in action.
+
+## What does CAPPY do?
+
+CAPPY sits between health-data sources and target platforms, keeping the demonstration focused on
+portable, consent-aware interoperability:
+
+- accepts illustrative clinical, wearable, and citizen-authorized inputs;
+- normalizes them into the shared `HealthData` model;
+- prepares FHIR, FSE, cloud, smartwatch, and OpenHospital-compatible payloads;
+- demonstrates routing decisions without sending real network requests.
+
+The current implementation is a local simulation. It does not yet connect to live FSE, cloud,
+HealthKit, Huawei Health Kit, or OpenHospital endpoints.
 
 This folder contains a small, browsable prototype for an adapter-driven health data architecture.
 
@@ -20,7 +47,7 @@ Cloud endpoints.
 ### Default mode
 
 ```bash
-python3 "Health-Data-Sample/demo.py"
+python3 "CAPPY/cappy_simulator.py"
 ```
 
 The script runs in simulated mode by default; cloud connection variables are not required or used.
@@ -28,7 +55,7 @@ The script runs in simulated mode by default; cloud connection variables are not
 ### Explicit simulated mode
 
 ```bash
-python3 "Health-Data-Sample/demo.py" --simulated
+python3 "CAPPY/cappy_simulator.py" --simulated
 ```
 
 The complete example output is available in [`demo-output.txt`](demo-output.txt), so the

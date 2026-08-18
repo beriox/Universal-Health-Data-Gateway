@@ -1,5 +1,8 @@
-# 🌐 Universal Health Data Gateway (UHDG)
+<p align="center">
+  <img src="CAPPY.png" alt="CAPPY Mascot" width="80" />
+</p>
 
+# 🌐 Universal Health Data Gateway (UHDG)
 > **"To make critical health data portable, secure, and available anywhere."**
 
 ---
@@ -58,7 +61,19 @@ While existing public infrastructures (such as National EHR portals and cross-bo
                                                                              │   Family / Next of Kin│
                                                                              └───────────────────────┘
 
-💻 Included Simulator (CLI)This repository includes a Python prototype (demo_sim.py) demonstrating the core pipeline:  Raw lab result ingestion.  Normalization to HL7 FHIR R4 (Observation).  Symmetric AES-256 (Fernet) encryption using client-managed keys.  Payload decryption verification for authorized endpoints.  🚀 QuickstartBash# Clone the repo
+💻 Included Simulator (CLI)
+
+This repository includes a Python prototype (demo_sim.py) demonstrating the core pipeline:
+Raw lab result ingestion.
+Normalization to HL7 FHIR R4 (Observation).
+Symmetric AES-256 (Fernet) encryption using client-managed keys.
+Payload decryption verification for authorized endpoints. 
+
+🚀 Quickstart
+
+Bash
+
+# Clone the repo
 git clone [https://github.com/beriox/Universal-Health-Data-Gateway.git](https://github.com/beriox/Universal-Health-Data-Gateway.git)
 cd Universal-Health-Data-Gateway
 
@@ -67,27 +82,48 @@ pip install -r requirements.txt
 
 # Run simulation
 python demo_sim.py
-You can see the generated output here:🔗 View demo_output.txt  🤝 Call for Maintainers & ContributorsNote from the Author: This repository serves as a conceptual framework and architectural blueprint[cite: 3]. I am looking for developers, digital health experts, NGOs, and emergency response teams to take over active maintenance, build source adaptors, and expand compliance rules[cite: 3].
+
+You can see the generated output here:
+🔗 View demo_output.txt 
+
+🤝 Call for Maintainers & ContributorsNote from the Author: This repository serves as a conceptual framework and architectural blueprint[cite: 3]. I am looking for developers, digital health experts, NGOs, and emergency response teams to take over active maintenance, build source adaptors, and expand compliance rules[cite: 3].
 
 ## 📊 Data Sources & Global Health Node Registry
 
 The simulator and routing matrix leverage real-world, open-access geographical and clinical datasets. To keep emergency routing fast and lightweight, the registry is structured into prioritized datasets:
 
 ### 1. Primary Emergency Nodes (High Priority)
+
 Used for immediate emergency routing and critical payload delivery.
+
 * **OpenStreetMap Overpass Query (Global Hospitals):**  
   🔗 [Query/Export Hospitals via Overpass Turbo](https://overpass-turbo.eu/?q=node%5B%22amenity%22%3D%22hospital%22%5D%3Bout%20body%3B)  
   *(Filters global entities tagged with `amenity=hospital` or `healthcare=hospital`)*.
 
 ### 2. Specialized & Secondary Clinical Nodes (Modular Datasets)
+
 For specialized diagnostics, blood testing, and ambulatory services (e.g., blood banks, private laboratories, specialist clinics).
+
 * **OpenStreetMap Healthcare Taxonomy:**  
   🔗 [OSM Healthcare Tagging Guidelines](https://wiki.openstreetmap.org/wiki/Key:healthcare)  
   *(Allows filtering sub-categories like `healthcare=laboratory`, `healthcare=blood_donation`, or `amenity=clinic`)*.
+
 * **Public FHIR Endpoints & Directories:**  
   🔗 [HL7 FHIR Official Registry Directory](https://registry.fhir.org/)  
   *(Publicly indexed FHIR R4 server endpoints for direct API handshake)*.
 
 ---
 💡 **Want to contribute or register a new node?**  
+
 Healthcare providers, developers, and NGOs can register their facility simply by adding or updating their location directly on OpenStreetMap (using amenity=hospital or healthcare=* tags), making it instantly available to the open network.
+
+---
+🦫 **CAPPY**
+
+[CAPPY](./CAPPY/README.md)
+
+This repository includes **CAPPY** (*Capybara Adaptive Payload Processing Engine*), a lightweight
+interactive simulator demonstrating canonical FHIR translation across FSE-oriented exchanges,
+cloud-provider payloads, wearable-health sources, and OpenHospital-compatible destinations.
+The simulator is conceptual and local: its API exchanges are illustrative and do not send live
+network requests.

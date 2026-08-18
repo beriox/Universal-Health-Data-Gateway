@@ -142,7 +142,7 @@ def sample_openhospital_payload(health_data: HealthData) -> dict:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run the Health Data Sample demo in simulated or live mode.")
+    parser = argparse.ArgumentParser(description="Run the CAPPY health-data simulator in simulated mode.")
     parser.add_argument(
         "--simulated",
         action="store_true",
