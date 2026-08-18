@@ -1,0 +1,65 @@
+Demo mode: simulated
+Simulated mode: no live cloud contracts or provider credentials are required.
+Transport note: exchanges are illustrative in-memory messages; no HTTPS request is sent.
+
+Demo journey:
+1. Read health data from an EU healthcare structure using FHIR.
+2. Check jurisdiction, consent, and routing rules before transmission.
+3. Normalize data so a multi-cloud application can work with it.
+4. Write normalized data to an EU healthcare structure using FHIR.
+5. Prepare data for an FSE exchange from an authorized application or institution.
+6. Prepare a temporary cloud transfer authorized by the citizen.
+7. Illustrate smartwatch monitoring data read from a cloud platform and prepared for FSE.
+8. Illustrate temporary cloud sharing for in-flight assistance or care in another country.
+9. Illustrate routing an authorized clinical summary to an OpenHospital-compatible endpoint.
+
+Step 1 - FHIR read from EU healthcare structure:
+{'source': 'fhir', 'source_system': 'FHIR R4', 'patient_id': 'patient-001', 'observations': ['Systolic blood pressure'], 'medications': ['Metformin']}
+
+Step 2 - Legal and routing decision:
+{'allowed': True, 'jurisdiction': 'EU', 'requires_consent': True, 'patient_id': 'patient-001'}
+
+Step 3 - Canonical HealthData model:
+{'patient': '<canonical patient record>', 'observations': '<normalized observations>', 'source': 'sample'}
+
+Step 4 - FHIR write to EU healthcare structure:
+{'resourceType': 'Bundle', 'type': 'collection', 'entry': [{'resource': {'resourceType': 'Patient', 'id': 'patient-001', 'name': [{'family': 'Doe', 'given': ['Jane']}], 'gender': 'female', 'birthDate': '1988-02-18'}}, {'resource': {'resourceType': 'Observation', 'status': 'final', 'code': {'coding': [{'code': '8480-6'}], 'text': 'Systolic blood pressure'}, 'valueQuantity': {'value': 122, 'unit': 'mmHg'}, 'effectiveDateTime': '2026-08-18'}}, {'resource': {'resourceType': 'MedicationStatement', 'status': 'active', 'medicationCodeableConcept': {'text': 'Metformin'}, 'effectivePeriod': {'start': '2026-07-01', 'end': None}, 'dosage': [{'text': '500 mg', 'timing': {'code': {'text': 'BID'}}}]}}], 'source': 'sample'}
+
+FSE payload:
+{'provider': 'fse', 'patient_id': 'patient-001', 'country': 'IT', 'observations': [{'code': '8480-6', 'display': 'Systolic blood pressure', 'value': 122, 'unit': 'mmHg', 'effective_date': '2026-08-18', 'status': 'final'}]}
+
+Step 5 - FSE API exchange example:
+POST fhir -> fse /api/v1/clinical-ingest
+Response: {'status': 202, 'accepted': True, 'message': 'FSE accepted the health-data exchange.', 'transaction_id': 'tx-fhir-fse-demo'}
+
+Step 6 - Cloud payload examples:
+Azure payload:
+{'provider': 'azure', 'patient_id': 'patient-001', 'record': '<canonical HealthData record>'}
+Azure API exchange example:
+POST fhir -> azure /health/v1/records
+Response: {'status': 202, 'accepted': True, 'message': 'AZURE accepted the health-data exchange.', 'transaction_id': 'tx-fhir-azure-demo'}
+
+AWS payload:
+{'provider': 'aws', 'patient_id': 'patient-001', 'record': '<canonical HealthData record>'}
+AWS API exchange example:
+POST fhir -> aws /route/health-records
+Response: {'status': 202, 'accepted': True, 'message': 'AWS accepted the health-data exchange.', 'transaction_id': 'tx-fhir-aws-demo'}
+
+Google Cloud payload:
+{'provider': 'google-cloud', 'patient_id': 'patient-001', 'record': '<canonical HealthData record>'}
+Google Cloud API exchange example:
+POST fhir -> google-cloud /v1beta1/health/ingest
+Response: {'status': 202, 'accepted': True, 'message': 'GOOGLE-CLOUD accepted the health-data exchange.', 'transaction_id': 'tx-fhir-google-cloud-demo'}
+
+Smartwatch cloud -> FSE examples:
+apple-healthkit read example: {'platform': 'Apple HealthKit / Apple Watch', 'measurements': [{'type': 'heart_rate', 'value': 72, 'unit': 'bpm'}], 'authorization': 'citizen-approved session'}
+apple-healthkit -> FSE exchange example: POST apple-healthkit -> fse /api/v1/clinical-ingest/wearables; Response: {'status': 202, 'accepted': True, 'message': 'FSE accepted the health-data exchange.', 'transaction_id': 'tx-apple-healthkit-fse-demo'}
+huawei-health-kit read example: {'platform': 'Huawei Health Kit / Huawei Watch', 'measurements': [{'type': 'heart_rate', 'value': 74, 'unit': 'bpm'}], 'authorization': 'citizen-approved session'}
+huawei-health-kit -> FSE exchange example: POST huawei-health-kit -> fse /api/v1/clinical-ingest/wearables; Response: {'status': 202, 'accepted': True, 'message': 'FSE accepted the health-data exchange.', 'transaction_id': 'tx-huawei-health-kit-fse-demo'}
+
+OpenHospital integration example:
+OpenHospital-compatible payload: {'destination': 'OpenHospital-compatible endpoint', 'patient_id': 'patient-001', 'clinical_summary': {'observations': ['normalized observation data'], 'medications': ['normalized medication data']}, 'authorization': 'authorized emergency-care session'}
+OpenHospital API exchange example: POST authorized-source -> openhospital /api/v1/health-records; Response: {'status': 202, 'accepted': True, 'message': 'OPENHOSPITAL accepted the health-data exchange.', 'transaction_id': 'tx-authorized-source-openhospital-demo'}
+
+Cross-system summary:
+{'providers': ['fhir', 'fse', 'azure', 'aws', 'google-cloud'], 'interop_pattern': 'FHIR canonical model -> provider-specific envelopes', 'status': 'simulated'}
