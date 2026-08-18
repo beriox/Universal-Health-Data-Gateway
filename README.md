@@ -50,10 +50,10 @@ While existing public infrastructures (such as National EHR portals and cross-bo
 ┌───────────────────────┐              ┌─────────────────────────┐           ┌───────────────────────┐
 │     DATA SOURCES      │              │     STORAGE VAULT       │           │     DESTINATIONS      │
 ├───────────────────────┤              ├─────────────────────────┤           ├───────────────────────┤
-│ • Hospitals / FHIR    │              │ • Global/EU/National    │           │ • Volunteer Doctor /  │
-│ • OpenMRS (NGOs)      │ ───────────► │   (Big5/Gaia-X/Aruba/...│ ────────► │   On-board Air Crew   │
-│ • Fitness Apps / IoT  │              │ • On-Prem/Regional/Local│           │ • Google Health /     │
-│ • PDF/OCR Import      │              │   (Hospital/USB Key/... │           │   EU Health Space     │
+│ • Hospitals / FHIR    │              │ • Global/Regional/Nation│           │ • Volunteer Doctor /  │
+│ • OpenMRS (NGOs)      │ ───────────► │   Clouds (Big5/Gaia-X/..│ ────────► │   On-board Air Crew   │
+│ • Fitness Apps / IoT  │              │ • On-Prem/Regional/Local│           │ • Multi-Cloud Health /│
+│ • PDF/OCR Import      │              │   (Hospital/USB Key/... │           │   EU Health Space /.. │
 └───────────────────────┘              └─────────────────────────┘           │ • Status Update for   │
                                                                              │   Family / Next of Kin│
                                                                              └───────────────────────┘
