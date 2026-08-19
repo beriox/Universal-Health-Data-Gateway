@@ -8,7 +8,7 @@
 ---
 
 ### 🚀 LIVE INTERACTIVE SIMULATOR
-> **🌐 Try the Demo:** **[Emergency Health Data Routing Simulator](https://beriox.github.io/Universal-Health-Data-Gateway/)**  
+> **🌐 Try AirCappy Demo:** **[Emergency Health Data Routing Simulator](https://beriox.github.io/Universal-Health-Data-Gateway/)**
 > *(Simulates real-time encrypted routing, jurisdictional compliance blocks, and potential integrations with open platforms like **OpenHospital** or travel onboarding software).*
 
 ---
@@ -60,7 +60,7 @@ While existing public infrastructures (such as National EHR portals and cross-bo
 └───────────────────────┘              └─────────────────────────┘           │ • Status Update for   │
                                                                              │   Family / Next of Kin│
                                                                              └───────────────────────┘
-
+```
 💻 Included Simulator (CLI)
 
 This repository includes a Python prototype (demo_sim.py) demonstrating the core pipeline:
@@ -86,7 +86,12 @@ python demo_sim.py
 You can see the generated output here:
 🔗 View demo_output.txt 
 
-🤝 Call for Maintainers & ContributorsNote from the Author: This repository serves as a conceptual framework and architectural blueprint[cite: 3]. I am looking for developers, digital health experts, NGOs, and emergency response teams to take over active maintenance, build source adaptors, and expand compliance rules[cite: 3].
+🤝 **Call for Maintainers & Contributors**
+
+Note from the Author: This repository serves as a conceptual framework and architectural blueprint.
+I am looking for developers, digital health experts, NGOs, and emergency response teams to take
+over active maintenance, build source adapters, expand compliance rules, and apply [Green IT best
+practices](./GREEN_IT.md).
 
 ## 📊 Data Sources & Global Health Node Registry
 
@@ -122,8 +127,9 @@ Healthcare providers, developers, and NGOs can register their facility simply by
 
 [CAPPY](./CAPPY/README.md)
 
-This repository includes **CAPPY** (*Capybara Adaptive Payload Processing Engine*), a lightweight
-interactive simulator demonstrating canonical FHIR translation across FSE-oriented exchanges,
-cloud-provider payloads, wearable-health sources, and OpenHospital-compatible destinations.
-The simulator is conceptual and local: its API exchanges are illustrative and do not send live
-network requests.
+This repository includes **CAPPY** (*Capybara Adaptive Payload Processing for You*), the reusable
+routing and payload-processing foundation behind more focused scenarios. The current UHDG
+`index.html` acts as the illustrative **AirCappy** prototype for emergency, geographic, and
+compliance-aware routing, while the [CAPPY simulator](./CAPPY/README.md) demonstrates the
+canonical FHIR and adapter layer. The simulator is conceptual and local: its API exchanges are
+illustrative and do not send live network requests.
